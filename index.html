@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FarmaVida - Centro Médico & Servicios</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts (Plus Jakarta Sans) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js para Visualización de Datos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- jsPDF para Exportación -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        salvia: {
+                            50: '#f2f8f5',
+                            100: '#e1f0e9',
+                            500: '#3c9b72',
+                            600: '#2A7B58', // Verde Salvia Principal
+                            700: '#216246',
+                            800: '#1c4f39',
+                            900: '#184231',
+                        },
+                        menta: {
+                            100: '#e8fbf3',
+                            300: '#A8E6CF', // Menta Accent
+                            400: '#8be0c1',
+                            500: '#64d2a9'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .card-salvia {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 20px -2px rgba(42, 123, 88, 0.05);
+        }
+    </style>
+</head>
+<body class="h-full text-slate-700 antialiased selection:bg-salvia-600 selection:text-white flex flex-col">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-all duration-300 bg-white border-l-4 border-salvia-600 px-5 py-4 rounded-2xl shadow-xl flex items-center space-x-3 max-w-md">
+        <div id="toastIconBg" class="w-8 h-8 rounded-xl bg-menta-100 flex items-center justify-center text-salvia-600">
+            <i id="toastIcon" class="fa-solid fa-circle-check"></i>
+        </div>
+        <div>
+            <p id="toastTitle" class="text-xs font-bold text-slate-800">Notificación</p>
+            <p id="toastMessage" class="text-xs text-slate-500">Operación ejecutada con éxito.</p>
+        </div>
+    </div>
+
+    <!-- HEADER / NAVEGACIÓN -->
+    <header class="bg-white sticky top-0 z-40 border-b border-slate-100 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            
+            <!-- Logo & Brand FarmaVida -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-salvia-600 flex items-center justify-center text-white shadow-md shadow-salvia-600/20">
+                    <i class="fa-solid fa-leaf text-lg"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="font-extrabold text-lg tracking-tight text-salvia-800">FarmaVida</span>
+                        <span id="roleBadge" class="bg-menta-100 text-salvia-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-menta-300">ADMIN</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400">Atención Médica Integral</p>
+                </div>
+            </div>
+
+            <!-- Menú Central (Dinámico según Rol) -->
+            <nav id="adminNav" class="hidden md:flex items-center space-x-1 bg-slate-50 p-1.5 rounded-2xl border border-slate-200">
+                <button onclick="switchTab('dashboard')" class="tab-btn active-tab px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2 text-white bg-salvia-600 shadow-md shadow-salvia-600/20" data-tab="dashboard">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Panel General</span>
+                </button>
+                <button onclick="switchTab('doctors')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2 text-slate-500 hover:text-salvia-700 hover:bg-slate-100" data-tab="doctors">
+                    <i class="fa-solid fa-user-md"></i>
+                    <span>Especialistas</span>
+                </button>
+                <button onclick="switchTab('appointments')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2 text-slate-500 hover:text-salvia-700 hover:bg-slate-100" data-tab="appointments">
+                    <i class="fa-solid fa-calendar-check"></i>
+                    <span>Consultas</span>
+                </button>
+                <button onclick="switchTab('reports')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2 text-slate-500 hover:text-salvia-700 hover:bg-slate-100" data-tab="reports">
+                    <i class="fa-solid fa-file-invoice-dollar"></i>
+                    <span>Finanzas</span>
+                </button>
+            </nav>
+
+            <!-- Selector de Rol -->
+            <div class="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <button id="btnRoleAdmin" onclick="setRole('admin')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 bg-salvia-600 text-white shadow-sm">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <span class="hidden sm:inline">Administrador</span>
+                </button>
+                <button id="btnRolePatient" onclick="setRole('patient')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 text-slate-500 hover:text-salvia-700">
+                    <i class="fa-solid fa-hospital-user"></i>
+                    <span class="hidden sm:inline">Paciente</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- ==================== VISTA PACIENTE ==================== -->
+        <div id="patientView" class="hidden space-y-8">
+            <!-- Banner Paciente -->
+            <div class="bg-gradient-to-r from-salvia-600 to-salvia-700 rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
+                <div class="relative z-10 max-w-xl space-y-3">
+                    <span class="bg-menta-300 text-salvia-900 text-xs font-extrabold px-3 py-1 rounded-full">Portal del Paciente</span>
+                    <h2 class="text-2xl font-extrabold">Bienvenido a FarmaVida</h2>
+                    <p class="text-xs text-salvia-100 leading-relaxed">Agenda tus consultas médicas en línea, consulta a nuestros especialistas calificados y mantén tu historial médico al día.</p>
+                </div>
+                <i class="fa-solid fa-notes-medical absolute -right-6 -bottom-6 text-9xl text-white/10"></i>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Solicitud de Cita Paciente -->
+                <div class="card-salvia p-6 rounded-3xl space-y-5">
+                    <div class="border-b border-slate-100 pb-3">
+                        <h3 class="font-bold text-salvia-800 text-base">Agendar Cita Médica</h3>
+                        <p class="text-xs text-slate-400">Ingresa tus datos para registrar la consulta</p>
+                    </div>
+
+                    <form onsubmit="handlePatientAppointmentSubmit(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre Completo</label>
+                            <input type="text" id="patientAptName" required placeholder="Ej. Carlos Mendoza" class="w-full text-xs px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-salvia-600">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Especialista / Médico</label>
+                            <select id="patientAptDoctor" required class="w-full text-xs px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-salvia-600">
+                                <!-- JS Populates -->
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Motivo / Sintomatología</label>
+                            <input type="text" id="patientAptAilment" required placeholder="Ej. Chequeo de rutina / Fiebre" class="w-full text-xs px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-salvia-600">
+                        </div>
+
+                        <button type="submit" class="w-full bg-salvia-600 hover:bg-salvia-700 text-white font-bold py-3 px-4 rounded-xl text-xs shadow-md shadow-salvia-600/20 transition-all">
+                            Confirmar Reserva de Cita
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Historial Personal del Paciente -->
+                <div class="lg:col-span-2 card-salvia p-6 rounded-3xl space-y-4">
+                    <div class="border-b border-slate-100 pb-3">
+                        <h3 class="font-bold text-salvia-800 text-base">Tus Citas Registradas</h3>
+                        <p class="text-xs text-slate-400">Consulta tus padecimientos y médicos asignados</p>
+                    </div>
+                    <div id="patientAppointmentsList" class="space-y-3">
+                        <!-- Cargado por JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== VISTA ADMINISTRADOR ==================== -->
+        <div id="adminView" class="space-y-8">
+
+            <!-- PESTAÑA 1: DASHBOARD CON GRÁFICOS -->
+            <section id="tab-dashboard" class="tab-content space-y-6">
+                
+                <!-- Cards Métricas KPI -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    
+                    <div class="card-salvia p-5 rounded-3xl relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-400">Total Consultas</p>
+                                <h3 id="statTotalApts" class="text-2xl font-extrabold text-salvia-800 mt-1">0</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-salvia-50 border border-salvia-100 flex items-center justify-center text-salvia-600">
+                                <i class="fa-solid fa-calendar-day text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-salvia p-5 rounded-3xl relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-400">Especialistas Activos</p>
+                                <h3 id="statTotalDocs" class="text-2xl font-extrabold text-salvia-800 mt-1">0</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-menta-100 border border-menta-300 flex items-center justify-center text-salvia-700">
+                                <i class="fa-solid fa-user-doctor text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-salvia p-5 rounded-3xl relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-400">Ingresos Totales</p>
+                                <h3 id="statTotalRevenue" class="text-2xl font-extrabold text-salvia-800 mt-1">$0.00</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
+                                <i class="fa-solid fa-vault text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-salvia p-5 rounded-3xl relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-400">Dividendo Médicos</p>
+                                <h3 id="statTotalDividends" class="text-2xl font-extrabold text-amber-600 mt-1">$0.00</h3>
+                            </div>
+                            <div class="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
+                                <i class="fa-solid fa-hand-holding-dollar text-lg"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Gráficos de Balance -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 card-salvia p-6 rounded-3xl space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="font-bold text-salvia-800 text-sm">Distribución Financiera FarmaVida</h3>
+                                <p class="text-xs text-slate-400">Balance entre ganancia de clínica y comisiones médicas</p>
+                            </div>
+                        </div>
+                        <div class="h-64 relative">
+                            <canvas id="financialChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card-salvia p-6 rounded-3xl space-y-4 flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-salvia-800 text-sm mb-1">Últimas Consultas</h3>
+                            <p class="text-xs text-slate-400 mb-4">Registro reciente de pacientes</p>
+                            <div id="dashboardRecentList" class="space-y-3">
+                                <!-- Carga JS -->
+                            </div>
+                        </div>
+                        <button onclick="switchTab('appointments')" class="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 transition-all text-center">
+                            Ver historial completo
+                        </button>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- PESTAÑA 2: REGISTRO DE ESPECIALISTAS -->
+            <section id="tab-doctors" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <div class="card-salvia p-6 rounded-3xl h-fit space-y-5">
+                        <div>
+                            <h3 class="font-bold text-salvia-800 text-base">Registrar Especialista</h3>
+                            <p class="text-xs text-slate-400 mt-1">Configuración del dividendo médica ($P/C$)</p>
+                        </div>
+
+                        <form id="formDoctor" onsubmit="handleDoctorSubmit(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre del Doctor(a)</label>
+                                <input type="text" id="docName" required placeholder="Ej. Dr. Alejandro Silva" class="w-full text-xs px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-salvia-600">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Especialidad</label>
+                                <select id="docSpecialty" required class="w-full text-xs px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-salvia-600">
+                                    <!-- JS Populates -->
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Porcentaje Dividendo (%)</label>
+                                <input type="number" id="docDividend" min="0" max="100" step="0.5" required placeholder="Ej. 50" class="w-full text-xs px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-salvia-600">
+                            </div>
+
+                            <button type="submit" class="w-full bg-salvia-600 hover:bg-salvia-700 text-white font-bold py-3 px-4 rounded-xl text-xs shadow-md shadow-salvia-600/20 transition-all">
+                                Guardar Especialista
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="lg:col-span-2 card-salvia p-6 rounded-3xl space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                            <div>
+                                <h3 class="font-bold text-salvia-800 text-base">Directorio Médico FarmaVida</h3>
+                                <p class="text-xs text-slate-400">Doctores activos y porcentajes asignados</p>
+                            </div>
+                            <span id="docCountBadge" class="bg-menta-100 text-salvia-800 text-xs px-3 py-1 rounded-full font-bold border border-menta-300">0 Doctores</span>
+                        </div>
+
+                        <div id="doctorsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <!-- Cards JS -->
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- PESTAÑA 3: GESTIÓN DE CONSULTAS (ADMIN) -->
+            <section id="tab-appointments" class="tab-content hidden space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <div class="card-salvia p-6 rounded-3xl h-fit space-y-5">
+                        <div>
+                            <h3 class="font-bold text-salvia-800 text-base">Registrar Consulta en Caja</h3>
+                            <p class="text-xs text-slate-400 mt-1">Carga directa de monto y asignación</p>
+                        </div>
+
+                        <form id="formAppointment" onsubmit="handleAppointmentSubmit(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre del Paciente</label>
+                                <input type="text" id="aptPatient" required placeholder="Ej. Maria Delgado" class="w-full text-xs px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-salvia-600">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Médico Tratante</label>
+                                <select id="aptDoctor" required class="w-full text-xs px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-salvia-600">
+                                    <!-- JS -->
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Padecimiento</label>
+                                <input type="text" id="aptAilment" required placeholder="Ej. Chequeo General" class="w-full text-xs px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-salvia-600">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-600 mb-1">Costo Consulta ($)</label>
+                                <input type="number" id="aptAmount" min="0" step="0.01" required placeholder="Ej. 75.00" class="w-full text-xs px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 focus:outline-none focus:border-salvia-600">
+                            </div>
+
+                            <button type="submit" class="w-full bg-salvia-600 hover:bg-salvia-700 text-white font-bold py-3 px-4 rounded-xl text-xs shadow-md shadow-salvia-600/20 transition-all">
+                                Procesar Consulta
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="lg:col-span-2 card-salvia p-6 rounded-3xl space-y-4">
+                        <div class="border-b border-slate-100 pb-4">
+                            <h3 class="font-bold text-salvia-800 text-base">Historial General de Consultas</h3>
+                            <p class="text-xs text-slate-400">Detalle financiero por consulta</p>
+                        </div>
+
+                        <div id="appointmentsContainer">
+                            <!-- JS Generates -->
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- PESTAÑA 4: FINANZAS Y EXPORTACIÓN -->
+            <section id="tab-reports" class="tab-content hidden space-y-6">
+                <div class="card-salvia p-6 rounded-3xl space-y-6">
+                    
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                        <div>
+                            <h3 class="font-bold text-salvia-800 text-lg">Liquidación de Dividendos Médicos</h3>
+                            <p class="text-xs text-slate-400">Reporte financiero acumulado por especialista</p>
+                        </div>
+
+                        <div class="flex items-center space-x-3">
+                            <button onclick="exportToExcel()" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all">
+                                <i class="fa-solid fa-file-excel"></i>
+                                <span>Exportar CSV/Excel</span>
+                            </button>
+                            <button onclick="exportToPDF()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center space-x-2 transition-all">
+                                <i class="fa-solid fa-file-pdf"></i>
+                                <span>Descargar PDF</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead>
+                                <tr class="text-slate-400 border-b border-slate-100 font-semibold">
+                                    <th class="pb-3 pl-2">Médico Especialista</th>
+                                    <th class="pb-3">% Dividendo</th>
+                                    <th class="pb-3">Consultas Atendidas</th>
+                                    <th class="pb-3">Ingreso Total</th>
+                                    <th class="pb-3 text-right pr-2">Dividendo a Pagar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportsTableBody" class="divide-y divide-slate-100 text-slate-600">
+                                <!-- JS Populates -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </section>
+
+        </div>
+
+    </main>
+
+    <!-- LÓGICA JAVASCRIPT -->
+    <script>
+        let appState = {
+            currentRole: 'admin',
+            specialties: ['Cardiología', 'Pediatría', 'Medicina General', 'Neurología', 'Ginecología'],
+            doctors: [
+                { id: 1, name: "Dr. Roberto Silva", specialty: "Cardiología", dividend: 50 },
+                { id: 2, name: "Dra. Elena Rostova", specialty: "Pediatría", dividend: 45 }
+            ],
+            appointments: [
+                { id: 101, patientName: "Carlos Pérez", doctorId: 1, doctorName: "Dr. Roberto Silva", amount: 100, doctorDividend: 50, ailment: "Arritmia leve", date: "2026-09-28" },
+                { id: 102, patientName: "Ana Gómez", doctorId: 2, doctorName: "Dra. Elena Rostova", amount: 80, doctorDividend: 36, ailment: "Control pediátrico", date: "2026-09-29" }
+            ]
+        };
+
+        let myChart = null;
+
+        function loadData() {
+            const saved = localStorage.getItem('farmavida_data');
+            if (saved) {
+                appState = JSON.parse(saved);
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('farmavida_data', JSON.stringify(appState));
+            updateUI();
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').textContent = message;
+            toast.classList.remove('translate-x-full');
+            setTimeout(() => { toast.classList.add('translate-x-full'); }, 3000);
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.dataset.tab === tabId) {
+                    btn.className = "tab-btn px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2 text-white bg-salvia-600 shadow-md shadow-salvia-600/20";
+                } else {
+                    btn.className = "tab-btn px-4 py-2 rounded-xl text-xs font-semibold transition-all flex items-center space-x-2 text-slate-500 hover:text-salvia-700 hover:bg-slate-100";
+                }
+            });
+        }
+
+        function setRole(role) {
+            appState.currentRole = role;
+            const btnAdmin = document.getElementById('btnRoleAdmin');
+            const btnPatient = document.getElementById('btnRolePatient');
+            const adminNav = document.getElementById('adminNav');
+            const roleBadge = document.getElementById('roleBadge');
+            const adminView = document.getElementById('adminView');
+            const patientView = document.getElementById('patientView');
+
+            if (role === 'admin') {
+                btnAdmin.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 bg-salvia-600 text-white shadow-sm";
+                btnPatient.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 text-slate-500 hover:text-salvia-700";
+                adminNav.classList.remove('hidden');
+                adminView.classList.remove('hidden');
+                patientView.classList.add('hidden');
+                roleBadge.textContent = "ADMIN";
+                roleBadge.className = "bg-menta-100 text-salvia-700 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-menta-300";
+                showToast('Modo Administrador activado');
+            } else {
+                btnPatient.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 bg-salvia-600 text-white shadow-sm";
+                btnAdmin.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 text-slate-500 hover:text-salvia-700";
+                adminNav.classList.add('hidden');
+                adminView.classList.add('hidden');
+                patientView.classList.remove('hidden');
+                roleBadge.textContent = "PACIENTE";
+                roleBadge.className = "bg-salvia-100 text-salvia-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full border border-salvia-200";
+                showToast('Modo Paciente activado');
+            }
+        }
+
+        function handleDoctorSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('docName').value.trim();
+            const specialty = document.getElementById('docSpecialty').value;
+            const dividend = parseFloat(document.getElementById('docDividend').value);
+
+            appState.doctors.push({ id: Date.now(), name, specialty, dividend });
+            document.getElementById('formDoctor').reset();
+            saveData();
+            showToast('Especialista registrado en FarmaVida');
+        }
+
+        function handleAppointmentSubmit(e) {
+            e.preventDefault();
+            const patientName = document.getElementById('aptPatient').value.trim();
+            const docId = parseInt(document.getElementById('aptDoctor').value);
+            const ailment = document.getElementById('aptAilment').value.trim();
+            const amount = parseFloat(document.getElementById('aptAmount').value);
+
+            const doctor = appState.doctors.find(d => d.id === docId);
+            if (!doctor) return;
+
+            const doctorDividend = amount * (doctor.dividend / 100);
+
+            appState.appointments.push({
+                id: Date.now(),
+                patientName,
+                doctorId: doctor.id,
+                doctorName: doctor.name,
+                amount,
+                doctorDividend,
+                ailment,
+                date: new Date().toISOString().split('T')[0]
+            });
+
+            document.getElementById('formAppointment').reset();
+            saveData();
+            showToast('Consulta médica registrada con éxito');
+        }
+
+        function handlePatientAppointmentSubmit(e) {
+            e.preventDefault();
+            const patientName = document.getElementById('patientAptName').value.trim();
+            const docId = parseInt(document.getElementById('patientAptDoctor').value);
+            const ailment = document.getElementById('patientAptAilment').value.trim();
+
+            const doctor = appState.doctors.find(d => d.id === docId);
+            if (!doctor) return;
+
+            appState.appointments.push({
+                id: Date.now(),
+                patientName,
+                doctorId: doctor.id,
+                doctorName: doctor.name,
+                amount: 0,
+                doctorDividend: 0,
+                ailment,
+                date: new Date().toISOString().split('T')[0]
+            });
+
+            document.getElementById('patientAptName').value = '';
+            document.getElementById('patientAptAilment').value = '';
+            saveData();
+            showToast('Tu cita ha sido solicitada. Será procesada en caja.');
+        }
+
+        function deleteDoctor(id) {
+            appState.doctors = appState.doctors.filter(d => d.id !== id);
+            saveData();
+            showToast('Especialista eliminado');
+        }
+
+        function deleteAppointment(id) {
+            appState.appointments = appState.appointments.filter(a => a.id !== id);
+            saveData();
+            showToast('Registro de consulta eliminado');
+        }
+
+        function updateUI() {
+            // Populate Selects
+            const specialtySelect = document.getElementById('docSpecialty');
+            specialtySelect.innerHTML = appState.specialties.map(s => `<option value="${s}">${s}</option>`).join('');
+
+            const doctorSelects = [document.getElementById('aptDoctor'), document.getElementById('patientAptDoctor')];
+            doctorSelects.forEach(select => {
+                if (select) {
+                    select.innerHTML = appState.doctors.map(d => `<option value="${d.id}">${d.name} (${d.specialty})</option>`).join('');
+                }
+            });
+
+            // Metrics
+            const totalApts = appState.appointments.length;
+            const totalDocs = appState.doctors.length;
+            const totalRevenue = appState.appointments.reduce((sum, a) => sum + a.amount, 0);
+            const totalDividends = appState.appointments.reduce((sum, a) => sum + a.doctorDividend, 0);
+
+            document.getElementById('statTotalApts').textContent = totalApts;
+            document.getElementById('statTotalDocs').textContent = totalDocs;
+            document.getElementById('statTotalRevenue').textContent = `$${totalRevenue.toFixed(2)}`;
+            document.getElementById('statTotalDividends').textContent = `$${totalDividends.toFixed(2)}`;
+            document.getElementById('docCountBadge').textContent = `${totalDocs} Doctores`;
+
+            // Doctors List
+            const doctorsContainer = document.getElementById('doctorsContainer');
+            if (appState.doctors.length === 0) {
+                doctorsContainer.innerHTML = `<p class="text-xs text-slate-400 col-span-2 text-center py-4">No hay médicos registrados.</p>`;
+            } else {
+                doctorsContainer.innerHTML = appState.doctors.map(d => `
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-salvia-100 text-salvia-700 font-extrabold flex items-center justify-center text-xs">
+                                ${d.name.split(' ').map(n=>n[0]).slice(-2).join('')}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-xs text-slate-800">${d.name}</h4>
+                                <p class="text-[11px] text-slate-400">${d.specialty}</p>
+                            </div>
+                        </div>
+                        <div class="text-right flex items-center space-x-3">
+                            <div>
+                                <span class="bg-menta-100 text-salvia-800 text-[11px] font-extrabold px-2 py-0.5 rounded-md border border-menta-300">${d.dividend}%</span>
+                                <p class="text-[10px] text-slate-400 mt-0.5">Dividendo</p>
+                            </div>
+                            <button onclick="deleteDoctor(${d.id})" class="text-slate-300 hover:text-rose-500 transition-all text-xs">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Appointments List (Admin)
+            const aptContainer = document.getElementById('appointmentsContainer');
+            if (appState.appointments.length === 0) {
+                aptContainer.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No hay consultas registradas.</p>`;
+            } else {
+                aptContainer.innerHTML = `
+                    <div class="space-y-3">
+                        ${appState.appointments.slice().reverse().map(a => `
+                            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-salvia-600 text-xs shadow-sm">
+                                        <i class="fa-solid fa-user-injured"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-bold text-xs text-slate-800">${a.patientName}</h4>
+                                        <p class="text-[11px] text-slate-400">${a.ailment} • <span class="text-salvia-700 font-semibold">${a.doctorName}</span></p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between sm:justify-end space-x-4 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200/60">
+                                    <div class="text-right">
+                                        <p class="text-xs font-extrabold text-slate-800">$${a.amount.toFixed(2)}</p>                                         <p class="text-[10px] text-amber-600 font-medium">Médico: $${a.doctorDividend.toFixed(2)}</p>
+                                    </div>
+                                    <button onclick="deleteAppointment(${a.id})" class="text-slate-300 hover:text-rose-500 transition-all text-xs">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
+            // Dashboard Recent List
+            const recentContainer = document.getElementById('dashboardRecentList');
+            if (appState.appointments.length === 0) {
+                recentContainer.innerHTML = `<p class="text-xs text-slate-400 text-center">Sin actividad.</p>`;
+            } else {
+                recentContainer.innerHTML = appState.appointments.slice(-3).reverse().map(a => `
+                    <div class="p-3 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs">
+                        <div>
+                            <p class="font-bold text-slate-800 text-[11px]">${a.patientName}</p>
+                            <p class="text-[10px] text-slate-400">${a.doctorName}</p>
+                        </div>
+                        <span class="font-extrabold text-salvia-700">$${a.amount.toFixed(2)}</span>
+                    </div>
+                `).join('');
+            }
+
+            // Patient Appointments List
+            const patientAptContainer = document.getElementById('patientAppointmentsList');
+            if (appState.appointments.length === 0) {
+                patientAptContainer.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No tienes consultas registradas.</p>`;
+            } else {
+                patientAptContainer.innerHTML = appState.appointments.slice().reverse().map(a => `
+                    <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between">
+                        <div>
+                            <span class="bg-salvia-100 text-salvia-800 text-[10px] font-bold px-2 py-0.5 rounded-md border border-salvia-200">${a.date}</span>
+                            <h4 class="font-bold text-xs text-slate-800 mt-1">${a.ailment}</h4>
+                            <p class="text-[11px] text-slate-400">Atendido por: <span class="text-salvia-700 font-semibold">${a.doctorName}</span></p>
+                        </div>
+                        <span class="text-xs font-bold px-2.5 py-1 rounded-lg ${a.amount > 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}">
+                            ${a.amount > 0 ? 'Pagado' : 'Pendiente Caja'}
+                        </span>
+                    </div>
+                `).join('');
+            }
+
+            // Reports Table
+            const reportsBody = document.getElementById('reportsTableBody');
+            if (appState.doctors.length === 0) {
+                reportsBody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-400">Sin datos para liquidación.</td></tr>`;
+            } else {
+                reportsBody.innerHTML = appState.doctors.map(d => {
+                    const docApts = appState.appointments.filter(a => a.doctorId === d.id);
+                    const totalDocRevenue = docApts.reduce((sum, a) => sum + a.amount, 0);
+                    const totalDocDividend = docApts.reduce((sum, a) => sum + a.doctorDividend, 0);
+
+                    return `
+                        <tr class="hover:bg-slate-50/50">
+                            <td class="py-3 pl-2 font-semibold text-slate-800">${d.name} <span class="text-[10px] text-slate-400 block font-normal">${d.specialty}</span></td>
+                            <td class="py-3">${d.dividend}%</td>
+                            <td class="py-3">${docApts.length}</td>
+                            <td class="py-3 font-semibold text-slate-700">$${totalDocRevenue.toFixed(2)}</td>
+                            <td class="py-3 text-right pr-2 font-extrabold text-amber-600">$${totalDocDividend.toFixed(2)}</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            renderChart(totalRevenue - totalDividends, totalDividends);
+        }
+
+        function renderChart(clinicNet, doctorsNet) {
+            const ctx = document.getElementById('financialChart').getContext('2d');
+            
+            if (myChart) {
+                myChart.destroy();
+            }
+
+            myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Ganancia Neta FarmaVida', 'Dividendo Especialistas'],
+                    datasets: [{
+                        data: [clinicNet, doctorsNet],
+                        backgroundColor: ['#2A7B58', '#f59e0b'],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { family: 'Plus Jakarta Sans', size: 11 },
+                                usePointStyle: true,
+                                padding: 15
+                            }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+
+        function exportToExcel() {
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Doctor,Especialidad,Porcentaje Dividendo,Consultas Atendidas,Ingreso Total,Dividendo Pagar\n";
+
+            appState.doctors.forEach(d => {
+                const docApts = appState.appointments.filter(a => a.doctorId === d.id);
+                const totalDocRevenue = docApts.reduce((sum, a) => sum + a.amount, 0);
+                const totalDocDividend = docApts.reduce((sum, a) => sum + a.doctorDividend, 0);
+                
+                csvContent += `"${d.name}","${d.specialty}",${d.dividend}%,${docApts.length},${totalDocRevenue.toFixed(2)},${totalDocDividend.toFixed(2)}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `FarmaVida_Liquidacion_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Archivo CSV descargado con éxito');
+        }
+
+        function exportToPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(16);
+            doc.setTextColor(42, 123, 88);
+            doc.text("FarmaVida - Reporte de Liquidación Financiera", 14, 20);
+
+            doc.setFontSize(10);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(100);
+            doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-ES')}`, 14, 28);
+
+            let y = 40;
+            doc.setFont('helvetica', 'bold');
+            doc.text("Especialista", 14, y);
+            doc.text("Consultas", 80, y);
+            doc.text("Ingresos", 120, y);
+            doc.text("A Pagar", 160, y);
+
+            doc.setLineWidth(0.5);
+            doc.setDrawColor(200);
+            doc.line(14, y + 2, 196, y + 2);
+
+            y += 10;
+            doc.setFont('helvetica', 'normal');
+
+            appState.doctors.forEach(d => {
+                const docApts = appState.appointments.filter(a => a.doctorId === d.id);
+                const totalDocRevenue = docApts.reduce((sum, a) => sum + a.amount, 0);
+                const totalDocDividend = docApts.reduce((sum, a) => sum + a.doctorDividend, 0);
+
+                doc.text(d.name, 14, y);
+                doc.text(docApts.length.toString(), 80, y);
+                doc.text(`$${totalDocRevenue.toFixed(2)}`, 120, y);
+                doc.text(`$${totalDocDividend.toFixed(2)}`, 160, y);
+                y += 8;
+            });
+
+            doc.save(`FarmaVida_Reporte_${new Date().toISOString().split('T')[0]}.pdf`);
+            showToast('Reporte PDF generado');
+        }
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            updateUI();
+        });
+    </script>
+</body>
+</html>
